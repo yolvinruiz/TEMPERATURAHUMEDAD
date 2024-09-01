@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitor de Temperatura y Humedad</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
+    <style>
+        body {
+            background: linear-gradient(to right, #6dd5fa, #2980b9); /* Fondo colorido con degradado */
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        div {
+            text-align: center;
+            background-color: rgba(0, 0, 0, 0.3); /* Fondo semitransparente */
+            padding: 20px;
+            border-radius: 10px;
+        }
+        p {
+            font-size: 24px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div>
+        <h1>Monitor de Temperatura y Humedad</h1>
+        <p>Temperatura: <span id="temperatura">--</span> °C</p>
+        <p>Humedad: <span id="humedad">--</span> %</p>
+    </div>
+
+    <script>
+        // Configuración de conexión MQTT
+        const mqtt_server = "397b5a1a6f0048bf8d67451aed18908b.s1.eu.hivemq.cloud";
+        const mqtt_port = 8884;
+        const mqtt_user = "Micredencial";
+        const mqtt_password = "Locoloco123";
+        
+        const client = new Paho.MQTT.Client(mqtt_server, mqtt_port, "webClient_" + parseInt(Math.random() * 100, 10));
+
+        // Función que se llama cuando la conexión es exitosa
+        function onConnect() {
+            console.log("Conectado al servidor MQTT");
+            // Suscribirse a los topics de temperatura y humedad
+            client.subscribe("test/temperatura");
+            client.subscribe("test/humedad");
+        }
+
+        // Función que se llama cuando llega un mensaje
+        function onMessageArrived(message) {
+            console.log("Mensaje recibido en el topic " + message.destinationName + ": " + message.payloadString);
+            if (message.destinationName === "test/temperatura") {
+                document.getElementById("temperatura").innerText = message.payloadString;
+            } else if (message.destinationName === "test/humedad") {
+                document.getElementById("humedad").innerText = message.payloadString;
+            }
+        }
+
+        // Configuración de los callbacks
+        client.onConnectionLost = function (responseObject) {
+            if (responseObject.errorCode !== 0) {
+                console.log("Conexión perdida: " + responseObject.errorMessage);
+            }
+        };
+        client.onMessageArrived = onMessageArrived;
+
+        // Conectar al broker MQTT
+        client.connect({
+            useSSL: true,
+            userName: mqtt_user,
+            password: mqtt_password,
+            onSuccess: onConnect,
+            onFailure: function (error) {
+                console.log("Error en la conexión: " + error.errorMessage);
+            }
+        });
+    </script>
+</body>
+</html>
